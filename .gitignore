@@ -37,7 +37,7 @@ next-env.d.ts
 Thumbs.db
 
 # Logs
-logs
+/logs
 *.log
 
 # Runtime data
@@ -108,3 +108,8 @@ temp/
 
 # Local Netlify folder
 .netlify
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

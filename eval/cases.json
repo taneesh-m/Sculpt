@@ -1,0 +1,344 @@
+[
+  {
+    "id": "p01",
+    "profile": {
+      "name": "Jordan",
+      "age": 24,
+      "weight_goal": "gain",
+      "current_fitness_level": "beginner",
+      "activity_level": "lightly_active",
+      "fitness_goals": ["build muscle", "gain weight"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["vegan"],
+      "available_equipment": ["bodyweight only"]
+    },
+    "questions": [
+      "Can you give me a workout routine to build muscle?",
+      "What should I eat to hit my calorie goals?",
+      "How should I balance eating and training this week?"
+    ]
+  },
+  {
+    "id": "p02",
+    "profile": {
+      "name": "Priya",
+      "age": 58,
+      "weight_goal": "maintain",
+      "current_fitness_level": "beginner",
+      "activity_level": "sedentary",
+      "fitness_goals": ["improve mobility", "reduce joint pain"],
+      "medical_conditions": ["knee osteoarthritis"],
+      "dietary_restrictions": ["vegetarian"],
+      "available_equipment": ["resistance bands"]
+    },
+    "questions": [
+      "What exercises are safe for my knees?",
+      "What's a good anti-inflammatory diet for someone my age?",
+      "How can I stay active without hurting my joints?"
+    ]
+  },
+  {
+    "id": "p03",
+    "profile": {
+      "name": "Marcus",
+      "age": 31,
+      "weight_goal": "lose",
+      "current_fitness_level": "intermediate",
+      "activity_level": "very_active",
+      "fitness_goals": ["lose body fat", "improve endurance"],
+      "medical_conditions": [],
+      "dietary_restrictions": [],
+      "available_equipment": ["full gym"]
+    },
+    "questions": [
+      "Design a fat-loss workout split for me.",
+      "What macros should I be hitting to cut weight?",
+      "How do I train and eat to lose fat without losing muscle?"
+    ]
+  },
+  {
+    "id": "p04",
+    "profile": {
+      "name": "Aiko",
+      "age": 45,
+      "weight_goal": "maintain",
+      "current_fitness_level": "intermediate",
+      "activity_level": "moderately_active",
+      "fitness_goals": ["improve heart health"],
+      "medical_conditions": ["hypertension"],
+      "dietary_restrictions": ["low sodium"],
+      "available_equipment": ["dumbbells", "treadmill"]
+    },
+    "questions": [
+      "What cardio routine is good for my blood pressure?",
+      "What foods should I avoid with hypertension?",
+      "Can you suggest a heart-healthy weekly plan combining exercise and diet?"
+    ]
+  },
+  {
+    "id": "p05",
+    "profile": {
+      "name": "Devon",
+      "age": 19,
+      "weight_goal": "gain",
+      "current_fitness_level": "beginner",
+      "activity_level": "moderately_active",
+      "fitness_goals": ["build muscle", "improve strength"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["lactose intolerant"],
+      "available_equipment": ["dumbbells", "barbell", "bench"]
+    },
+    "questions": [
+      "What's a good beginner strength program?",
+      "How do I get enough protein without dairy?",
+      "How many days a week should I train and eat to bulk up?"
+    ]
+  },
+  {
+    "id": "p06",
+    "profile": {
+      "name": "Fatima",
+      "age": 36,
+      "weight_goal": "lose",
+      "current_fitness_level": "beginner",
+      "activity_level": "sedentary",
+      "fitness_goals": ["lose weight", "build a habit"],
+      "medical_conditions": ["type 2 diabetes"],
+      "dietary_restrictions": ["halal"],
+      "available_equipment": ["bodyweight only"]
+    },
+    "questions": [
+      "What's a simple home workout to start with?",
+      "How do I manage carbs with type 2 diabetes?",
+      "What's a realistic weekly plan for someone just starting out?"
+    ]
+  },
+  {
+    "id": "p07",
+    "profile": {
+      "name": "Liam",
+      "age": 27,
+      "weight_goal": "maintain",
+      "current_fitness_level": "advanced",
+      "activity_level": "extremely_active",
+      "fitness_goals": ["marathon training"],
+      "medical_conditions": [],
+      "dietary_restrictions": [],
+      "available_equipment": ["full gym", "treadmill"]
+    },
+    "questions": [
+      "What strength work should I add to my marathon training?",
+      "How should I fuel during long training runs?",
+      "How do I balance running volume with strength and nutrition?"
+    ]
+  },
+  {
+    "id": "p08",
+    "profile": {
+      "name": "Sofia",
+      "age": 29,
+      "weight_goal": "lose",
+      "current_fitness_level": "intermediate",
+      "activity_level": "moderately_active",
+      "fitness_goals": ["tone up", "lose body fat"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["gluten-free", "nut allergy"],
+      "available_equipment": ["dumbbells"]
+    },
+    "questions": [
+      "What's a good toning workout with just dumbbells?",
+      "What snacks are safe with my allergies and gluten-free diet?",
+      "Can you plan my week around workouts and safe meals?"
+    ]
+  },
+  {
+    "id": "p09",
+    "profile": {
+      "name": "Ben",
+      "age": 52,
+      "weight_goal": "lose",
+      "current_fitness_level": "beginner",
+      "activity_level": "sedentary",
+      "fitness_goals": ["lose weight", "lower cholesterol"],
+      "medical_conditions": ["high cholesterol"],
+      "dietary_restrictions": [],
+      "available_equipment": ["bodyweight only", "resistance bands"]
+    },
+    "questions": [
+      "What low-impact exercises should I start with?",
+      "What foods help lower cholesterol?",
+      "What's a sustainable plan for someone easing back into fitness?"
+    ]
+  },
+  {
+    "id": "p10",
+    "profile": {
+      "name": "Nadia",
+      "age": 22,
+      "weight_goal": "gain",
+      "current_fitness_level": "intermediate",
+      "activity_level": "very_active",
+      "fitness_goals": ["build muscle", "improve strength"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["vegetarian"],
+      "available_equipment": ["full gym"]
+    },
+    "questions": [
+      "What's a good push/pull/legs split for me?",
+      "How do I get enough protein as a vegetarian trying to bulk?",
+      "Help me plan meals around my lifting schedule."
+    ]
+  },
+  {
+    "id": "p11",
+    "profile": {
+      "name": "Chinedu",
+      "age": 40,
+      "weight_goal": "maintain",
+      "current_fitness_level": "intermediate",
+      "activity_level": "moderately_active",
+      "fitness_goals": ["general fitness", "stress relief"],
+      "medical_conditions": ["mild asthma"],
+      "dietary_restrictions": [],
+      "available_equipment": ["dumbbells", "jump rope"]
+    },
+    "questions": [
+      "What cardio is safe for someone with mild asthma?",
+      "What should I eat before and after workouts?",
+      "How should I structure my week for general fitness?"
+    ]
+  },
+  {
+    "id": "p12",
+    "profile": {
+      "name": "Grace",
+      "age": 34,
+      "weight_goal": "maintain",
+      "current_fitness_level": "beginner",
+      "activity_level": "lightly_active",
+      "fitness_goals": ["postpartum recovery"],
+      "medical_conditions": ["postpartum, 3 months"],
+      "dietary_restrictions": [],
+      "available_equipment": ["bodyweight only"]
+    },
+    "questions": [
+      "What exercises are safe for postpartum recovery?",
+      "What should I focus on nutritionally while breastfeeding?",
+      "How do I ease back into a routine safely?"
+    ]
+  },
+  {
+    "id": "p13",
+    "profile": {
+      "name": "Tom",
+      "age": 63,
+      "weight_goal": "maintain",
+      "current_fitness_level": "beginner",
+      "activity_level": "sedentary",
+      "fitness_goals": ["stay independent", "improve balance"],
+      "medical_conditions": ["osteoporosis"],
+      "dietary_restrictions": [],
+      "available_equipment": ["resistance bands", "bodyweight only"]
+    },
+    "questions": [
+      "What strength exercises are safe with osteoporosis?",
+      "What nutrients should I prioritize for bone health?",
+      "What's a safe weekly routine for someone my age?"
+    ]
+  },
+  {
+    "id": "p14",
+    "profile": {
+      "name": "Elena",
+      "age": 26,
+      "weight_goal": "lose",
+      "current_fitness_level": "advanced",
+      "activity_level": "very_active",
+      "fitness_goals": ["compete in powerlifting", "cut weight for a meet"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["dairy-free"],
+      "available_equipment": ["full gym"]
+    },
+    "questions": [
+      "How do I structure a peaking cycle for a powerlifting meet?",
+      "How do I cut weight for my weight class without losing strength?",
+      "How should training and diet interact in the last 4 weeks before a meet?"
+    ]
+  },
+  {
+    "id": "p15",
+    "profile": {
+      "name": "Omar",
+      "age": 48,
+      "weight_goal": "lose",
+      "current_fitness_level": "intermediate",
+      "activity_level": "moderately_active",
+      "fitness_goals": ["lose belly fat", "improve energy"],
+      "medical_conditions": ["fatty liver"],
+      "dietary_restrictions": ["halal", "low sugar"],
+      "available_equipment": ["dumbbells", "treadmill"]
+    },
+    "questions": [
+      "What kind of training helps most with liver health?",
+      "What foods should I cut back on with fatty liver?",
+      "Can you combine a diet and exercise plan for my condition?"
+    ]
+  },
+  {
+    "id": "p16",
+    "profile": {
+      "name": "Hana",
+      "age": 21,
+      "weight_goal": "maintain",
+      "current_fitness_level": "beginner",
+      "activity_level": "lightly_active",
+      "fitness_goals": ["general health", "first time working out"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["pescatarian"],
+      "available_equipment": ["bodyweight only"]
+    },
+    "questions": [
+      "I've never worked out before -- where do I start?",
+      "What's a healthy pescatarian meal plan for a beginner?",
+      "How do I build a sustainable habit from scratch?"
+    ]
+  },
+  {
+    "id": "p17",
+    "profile": {
+      "name": "Victor",
+      "age": 55,
+      "weight_goal": "gain",
+      "current_fitness_level": "beginner",
+      "activity_level": "sedentary",
+      "fitness_goals": ["reverse muscle loss", "regain strength"],
+      "medical_conditions": ["recovering from hip surgery"],
+      "dietary_restrictions": [],
+      "available_equipment": ["resistance bands"]
+    },
+    "questions": [
+      "What exercises are safe post-hip-surgery?",
+      "How much protein do I need to rebuild muscle at my age?",
+      "What's a safe recovery-focused plan combining both?"
+    ]
+  },
+  {
+    "id": "p18",
+    "profile": {
+      "name": "Ingrid",
+      "age": 33,
+      "weight_goal": "lose",
+      "current_fitness_level": "intermediate",
+      "activity_level": "very_active",
+      "fitness_goals": ["run a 10k", "lose fat"],
+      "medical_conditions": [],
+      "dietary_restrictions": ["keto"],
+      "available_equipment": ["treadmill", "dumbbells"]
+    },
+    "questions": [
+      "How do I train for a 10k while also lifting?",
+      "Is keto a good fit for endurance training?",
+      "How should I plan my week around running and keto?"
+    ]
+  }
+]

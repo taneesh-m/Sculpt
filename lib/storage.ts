@@ -1,43 +1,21 @@
-import { AIWorkoutPlan, AIMealPlan, UserSettings, Message } from './types'
+import { AIWorkoutPlan, AIMealPlan, Message } from './types'
 
 const STORAGE_KEYS = {
-  USER_SETTINGS: 'userSettings',
   AI_WORKOUT_PLANS: 'aiWorkoutPlans',
   AI_MEAL_PLANS: 'aiMealPlans',
-  WORKOUT_HISTORY: 'workoutHistory',
-  DIET_HISTORY: 'dietHistory',
   CHAT_MESSAGES: 'chatMessages'
 } as const
 
+// User settings, workout history, and diet history are now backed by the
+// real API (see lib/hooks/use-profile.ts, use-workouts.ts, use-diet.ts).
+// AI-generated plans and chat messages remain local until phase 4 promotes
+// them to the ai_plans/chat_history tables.
 export class StorageManager {
-  // User Settings
-  static getUserSettings(): UserSettings | null {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS)
-      return data ? JSON.parse(data) : null
-    } catch (error) {
-      console.error('Error loading user settings:', error)
-      return null
-    }
-  }
-
-  static saveUserSettings(settings: UserSettings): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(settings))
-    } catch (error) {
-      console.error('Error saving user settings:', error)
-    }
-  }
-
   // Chat Messages
   static getChatMessages(): Message[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES)
-      const messages = data ? JSON.parse(data) : []
-      return messages.map((message: any) => ({
-        ...message,
-        timestamp: new Date(message.timestamp)
-      }))
+      return data ? JSON.parse(data) : []
     } catch (error) {
       console.error('Error loading chat messages:', error)
       return []
@@ -64,11 +42,7 @@ export class StorageManager {
   static getAIWorkoutPlans(): AIWorkoutPlan[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.AI_WORKOUT_PLANS)
-      const plans = data ? JSON.parse(data) : []
-      return plans.map((plan: any) => ({
-        ...plan,
-        date: new Date(plan.date)
-      }))
+      return data ? JSON.parse(data) : []
     } catch (error) {
       console.error('Error loading AI workout plans:', error)
       return []
@@ -99,11 +73,7 @@ export class StorageManager {
   static getAIMealPlans(): AIMealPlan[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.AI_MEAL_PLANS)
-      const plans = data ? JSON.parse(data) : []
-      return plans.map((plan: any) => ({
-        ...plan,
-        date: new Date(plan.date)
-      }))
+      return data ? JSON.parse(data) : []
     } catch (error) {
       console.error('Error loading AI meal plans:', error)
       return []
@@ -129,50 +99,4 @@ export class StorageManager {
       console.error('Error deleting AI meal plan:', error)
     }
   }
-
-  // Workout History
-  static getWorkoutHistory(): any[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.WORKOUT_HISTORY)
-      const history = data ? JSON.parse(data) : []
-      return history.map((workout: any) => ({
-        ...workout,
-        date: new Date(workout.date)
-      }))
-    } catch (error) {
-      console.error('Error loading workout history:', error)
-      return []
-    }
-  }
-
-  static saveWorkoutHistory(history: any[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.WORKOUT_HISTORY, JSON.stringify(history))
-    } catch (error) {
-      console.error('Error saving workout history:', error)
-    }
-  }
-
-  // Diet History
-  static getDietHistory(): any[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.DIET_HISTORY)
-      const history = data ? JSON.parse(data) : []
-      return history.map((log: any) => ({
-        ...log,
-        date: new Date(log.date)
-      }))
-    } catch (error) {
-      console.error('Error loading diet history:', error)
-      return []
-    }
-  }
-
-  static saveDietHistory(history: any[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.DIET_HISTORY, JSON.stringify(history))
-    } catch (error) {
-      console.error('Error saving diet history:', error)
-    }
-  }
-} 
+}

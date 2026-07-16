@@ -1,66 +1,47 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { generateText } from "ai"
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from "ai"
 import { openai } from "@ai-sdk/openai"
 
-// This is the main chat orchestrator that decides which agent to use
-export async function POST(req: NextRequest) {
-  try {
-    const { message } = await req.json()
+import { createClient } from "@/lib/supabase/server"
+import { buildTools } from "@/lib/ai/tools"
+import { trackEvent } from "@/lib/analytics/track-event"
+import { buildProfileConditionedSystemPrompt } from "@/lib/ai/generate-response"
 
-    // Determine which agent to use based on the message content
-    let agentType = "orchestrator"
+export async function POST(req: Request) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    if (message.toLowerCase().includes("workout") || message.toLowerCase().includes("exercise")) {
-      agentType = "workout"
-    } else if (
-      message.toLowerCase().includes("diet") ||
-      message.toLowerCase().includes("nutrition") ||
-      message.toLowerCase().includes("food")
-    ) {
-      agentType = "diet"
-    }
-
-    // Route to the appropriate agent
-    let response
-
-    if (agentType === "workout") {
-      response = await callWorkoutAgent(message)
-    } else if (agentType === "diet") {
-      response = await callDietAgent(message)
-    } else {
-      // Default orchestrator response
-      response = await generateText({
-        model: openai("gpt-4o"),
-        prompt: message,
-        system:
-          "You are a helpful fitness and nutrition assistant. Your job is to guide users to the workout or diet agent based on their questions. For workout questions, mention the workout agent. For nutrition questions, mention the diet agent. Keep responses brief and helpful.",
-      })
-    }
-
-    return NextResponse.json({
-      content: response.text,
-      agent: agentType,
-    })
-  } catch (error) {
-    console.error("Chat error:", error)
-    return NextResponse.json({ error: "Failed to process chat message" }, { status: 500 })
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 })
   }
-}
 
-async function callWorkoutAgent(message: string) {
-  return generateText({
-    model: openai("gpt-4o"),
-    prompt: message,
-    system:
-      "You are a workout specialist AI agent. Provide expert advice on exercises, workout routines, and fitness goals. Keep responses concise and actionable. Focus only on workout-related topics.",
-  })
-}
+  const { messages }: { messages: UIMessage[] } = await req.json()
 
-async function callDietAgent(message: string) {
-  return generateText({
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+
+  const systemPrompt = `${buildProfileConditionedSystemPrompt(profile)}
+
+You have tools to look up and log the user's real data -- use them instead of guessing:
+- getUserProfile / getWorkoutHistory / getDietLogs to see what's actually true about this user before advising them
+- logWorkout / logDietEntry when the user describes something they did and wants it recorded
+- searchNutrition to look up real nutrition facts for a food instead of estimating
+- generateWorkoutPlan / generateMealPlan to create and save a structured plan when the user asks for one -- always use these tools for plans rather than just describing a plan in prose, so it gets saved to their account`
+
+  const result = streamText({
     model: openai("gpt-4o"),
-    prompt: message,
-    system:
-      "You are a nutrition specialist AI agent with access to USDA nutrition data. Provide expert advice on diet, nutrition, and meal planning. Include specific nutritional information when relevant. Keep responses concise and actionable. Focus only on nutrition-related topics.",
+    system: systemPrompt,
+    messages: await convertToModelMessages(messages),
+    tools: buildTools(supabase, user.id),
+    stopWhen: stepCountIs(5),
+    onFinish: async ({ text }) => {
+      const lastUserMessage = [...messages].reverse().find((m) => m.role === "user")
+      const userText = lastUserMessage?.parts.find((p) => p.type === "text")?.text ?? ""
+
+      await supabase.from("chat_history").insert([{ user_id: user.id, user_message: userText, ai_response: text }])
+      await trackEvent(supabase, user.id, "chat_message_sent")
+    },
   })
+
+  return result.toUIMessageStreamResponse()
 }

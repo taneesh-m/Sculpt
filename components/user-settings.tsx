@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,50 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Settings, Save, Edit } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-type UserSettings = {
-  name: string
-  age: number
-  gender: 'male' | 'female' | 'other'
-  height_cm: number
-  weight_kg: number
-  activity_level: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active'
-  fitness_goals: string[]
-  current_fitness_level: 'beginner' | 'intermediate' | 'advanced'
-  medical_conditions: string[]
-  dietary_restrictions: string[]
-  preferred_workout_duration: number
-  workout_frequency: number
-  available_equipment: string[]
-  weight_goal: 'lose' | 'maintain' | 'gain'
-  target_weight: number
-  body_fat_percentage: number
-  muscle_mass: number
-}
-
-const DEFAULT_SETTINGS: UserSettings = {
-  name: "Alex",
-  age: 28,
-  gender: "male",
-  height_cm: 175,
-  weight_kg: 75,
-  activity_level: "moderately_active",
-  fitness_goals: ["build muscle", "improve strength", "lose body fat"],
-  current_fitness_level: "intermediate",
-  medical_conditions: [],
-  dietary_restrictions: ["lactose intolerant"],
-  preferred_workout_duration: 60,
-  workout_frequency: 4,
-  available_equipment: ["dumbbells", "barbell", "bench", "pull-up bar"],
-  weight_goal: "lose",
-  target_weight: 70,
-  body_fat_percentage: 18,
-  muscle_mass: 60
-}
+import { useProfile, useUpdateProfile } from "@/lib/hooks/use-profile"
+import type { UserSettings as UserSettingsType } from "@/lib/types"
 
 export function UserSettings() {
   const { toast } = useToast()
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
+  const { data: profile, isLoading } = useProfile()
+  const updateProfile = useUpdateProfile()
+  const [settings, setSettings] = useState<UserSettingsType | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [newGoal, setNewGoal] = useState("")
   const [newMedicalCondition, setNewMedicalCondition] = useState("")
@@ -60,36 +24,54 @@ export function UserSettings() {
   const [newEquipment, setNewEquipment] = useState("")
 
   useEffect(() => {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('userSettings')
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings))
-    }
-  }, [])
+    if (profile) setSettings(profile)
+  }, [profile])
+
+  if (isLoading || !settings) {
+    return <div className="text-muted-foreground">Loading settings...</div>
+  }
 
   const saveSettings = () => {
-    localStorage.setItem('userSettings', JSON.stringify(settings))
-    setIsEditing(false)
-    toast({
-      title: "Settings Saved",
-      description: "Your personal information has been updated",
+    updateProfile.mutate(settings, {
+      onSuccess: () => {
+        setIsEditing(false)
+        toast({
+          title: "Settings Saved",
+          description: "Your personal information has been updated",
+        })
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to save your settings. Please try again.",
+          variant: "destructive",
+        })
+      },
     })
   }
 
-  const addArrayItem = (field: keyof UserSettings, value: string) => {
+  const addArrayItem = (field: keyof UserSettingsType, value: string) => {
     if (!value.trim()) return
-    
-    setSettings(prev => ({
-      ...prev,
-      [field]: [...(prev[field] as string[] || []), value.trim()]
-    }))
+
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            [field]: [...((prev[field] as string[]) || []), value.trim()],
+          }
+        : prev,
+    )
   }
 
-  const removeArrayItem = (field: keyof UserSettings, index: number) => {
-    setSettings(prev => ({
-      ...prev,
-      [field]: (prev[field] as string[] || []).filter((_, i) => i !== index)
-    }))
+  const removeArrayItem = (field: keyof UserSettingsType, index: number) => {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            [field]: ((prev[field] as string[]) || []).filter((_, i) => i !== index),
+          }
+        : prev,
+    )
   }
 
   return (
@@ -103,7 +85,7 @@ export function UserSettings() {
           onClick={() => setIsEditing(!isEditing)}
           variant={isEditing ? "outline" : "default"}
         >
-          {isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+          <Edit className="h-4 w-4 mr-2" />
           {isEditing ? "Cancel" : "Edit"}
         </Button>
       </div>
@@ -121,7 +103,7 @@ export function UserSettings() {
               <Input
                 id="name"
                 value={settings.name}
-                onChange={(e) => setSettings(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setSettings((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
                 disabled={!isEditing}
                 placeholder="Your name"
               />
@@ -133,7 +115,9 @@ export function UserSettings() {
                   id="age"
                   type="number"
                   value={settings.age}
-                  onChange={(e) => setSettings(prev => ({ ...prev, age: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) => (prev ? { ...prev, age: Number(e.target.value) || 0 } : prev))
+                  }
                   disabled={!isEditing}
                   placeholder="25"
                 />
@@ -142,7 +126,9 @@ export function UserSettings() {
                 <Label htmlFor="gender">Gender</Label>
                 <Select
                   value={settings.gender}
-                  onValueChange={(value) => setSettings(prev => ({ ...prev, gender: value as any }))}
+                  onValueChange={(value) =>
+                    setSettings((prev) => (prev ? { ...prev, gender: value as UserSettingsType["gender"] } : prev))
+                  }
                   disabled={!isEditing}
                 >
                   <SelectTrigger>
@@ -163,7 +149,9 @@ export function UserSettings() {
                   id="height"
                   type="number"
                   value={settings.height_cm}
-                  onChange={(e) => setSettings(prev => ({ ...prev, height_cm: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) => (prev ? { ...prev, height_cm: Number(e.target.value) || 0 } : prev))
+                  }
                   disabled={!isEditing}
                   placeholder="175"
                 />
@@ -174,7 +162,9 @@ export function UserSettings() {
                   id="weight"
                   type="number"
                   value={settings.weight_kg}
-                  onChange={(e) => setSettings(prev => ({ ...prev, weight_kg: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) => (prev ? { ...prev, weight_kg: Number(e.target.value) || 0 } : prev))
+                  }
                   disabled={!isEditing}
                   placeholder="70"
                 />
@@ -184,7 +174,11 @@ export function UserSettings() {
               <Label htmlFor="activity">Activity Level</Label>
               <Select
                 value={settings.activity_level}
-                onValueChange={(value) => setSettings(prev => ({ ...prev, activity_level: value as any }))}
+                onValueChange={(value) =>
+                  setSettings((prev) =>
+                    prev ? { ...prev, activity_level: value as UserSettingsType["activity_level"] } : prev,
+                  )
+                }
                 disabled={!isEditing}
               >
                 <SelectTrigger>
@@ -214,7 +208,11 @@ export function UserSettings() {
                 <Label htmlFor="fitness-level">Fitness Level</Label>
                 <Select
                   value={settings.current_fitness_level}
-                  onValueChange={(value) => setSettings(prev => ({ ...prev, current_fitness_level: value as any }))}
+                  onValueChange={(value) =>
+                    setSettings((prev) =>
+                      prev ? { ...prev, current_fitness_level: value as UserSettingsType["current_fitness_level"] } : prev,
+                    )
+                  }
                   disabled={!isEditing}
                 >
                   <SelectTrigger>
@@ -235,7 +233,11 @@ export function UserSettings() {
                   min="1"
                   max="7"
                   value={settings.workout_frequency}
-                  onChange={(e) => setSettings(prev => ({ ...prev, workout_frequency: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) =>
+                      prev ? { ...prev, workout_frequency: Number(e.target.value) || 0 } : prev,
+                    )
+                  }
                   disabled={!isEditing}
                   placeholder="3"
                 />
@@ -249,7 +251,11 @@ export function UserSettings() {
                 min="10"
                 max="300"
                 value={settings.preferred_workout_duration}
-                onChange={(e) => setSettings(prev => ({ ...prev, preferred_workout_duration: Number(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setSettings((prev) =>
+                    prev ? { ...prev, preferred_workout_duration: Number(e.target.value) || 0 } : prev,
+                  )
+                }
                 disabled={!isEditing}
                 placeholder="60"
               />
@@ -310,7 +316,9 @@ export function UserSettings() {
               <Label htmlFor="weight-goal">Weight Goal</Label>
               <Select
                 value={settings.weight_goal}
-                onValueChange={(value) => setSettings(prev => ({ ...prev, weight_goal: value as any }))}
+                onValueChange={(value) =>
+                  setSettings((prev) => (prev ? { ...prev, weight_goal: value as UserSettingsType["weight_goal"] } : prev))
+                }
                 disabled={!isEditing}
               >
                 <SelectTrigger>
@@ -330,7 +338,9 @@ export function UserSettings() {
                   id="target-weight"
                   type="number"
                   value={settings.target_weight}
-                  onChange={(e) => setSettings(prev => ({ ...prev, target_weight: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) => (prev ? { ...prev, target_weight: Number(e.target.value) || 0 } : prev))
+                  }
                   disabled={!isEditing}
                   placeholder="65"
                 />
@@ -344,7 +354,11 @@ export function UserSettings() {
                   max="50"
                   step="0.1"
                   value={settings.body_fat_percentage}
-                  onChange={(e) => setSettings(prev => ({ ...prev, body_fat_percentage: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setSettings((prev) =>
+                      prev ? { ...prev, body_fat_percentage: Number(e.target.value) || 0 } : prev,
+                    )
+                  }
                   disabled={!isEditing}
                   placeholder="18"
                 />
@@ -359,7 +373,9 @@ export function UserSettings() {
                 max="200"
                 step="0.1"
                 value={settings.muscle_mass}
-                onChange={(e) => setSettings(prev => ({ ...prev, muscle_mass: Number(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setSettings((prev) => (prev ? { ...prev, muscle_mass: Number(e.target.value) || 0 } : prev))
+                }
                 disabled={!isEditing}
                 placeholder="60"
               />
@@ -370,7 +386,7 @@ export function UserSettings() {
         {/* Equipment and Restrictions */}
         <Card>
           <CardHeader>
-            <CardTitle>Equipment & Restrictions</CardTitle>
+            <CardTitle>Equipment &amp; Restrictions</CardTitle>
             <CardDescription>Available equipment and health considerations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -506,20 +522,15 @@ export function UserSettings() {
 
       {isEditing && (
         <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(false)}
-          >
+          <Button variant="outline" onClick={() => setIsEditing(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={saveSettings}
-          >
+          <Button onClick={saveSettings} disabled={updateProfile.isPending}>
             <Save className="h-4 w-4 mr-2" />
-            Save Settings
+            {updateProfile.isPending ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       )}
     </div>
   )
-} 
+}

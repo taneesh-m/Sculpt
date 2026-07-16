@@ -1,35 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Trash2, Dumbbell, Clock, Target, Eye } from "lucide-react"
-import { AIWorkoutPlan } from "@/lib/types"
-import { StorageManager } from "@/lib/storage"
+import { useAIWorkoutPlans, useDeleteAIPlan } from "@/lib/hooks/use-ai-plans"
 import { useToast } from "@/hooks/use-toast"
 
 export function AIWorkoutPlans() {
   const { toast } = useToast()
-  const [plans, setPlans] = useState<AIWorkoutPlan[]>([])
-  const [selectedPlan, setSelectedPlan] = useState<AIWorkoutPlan | null>(null)
-
-  useEffect(() => {
-    loadPlans()
-  }, [])
-
-  const loadPlans = () => {
-    const savedPlans = StorageManager.getAIWorkoutPlans()
-    setPlans(savedPlans)
-  }
+  const { data: plans } = useAIWorkoutPlans()
+  const deletePlanMutation = useDeleteAIPlan("workout")
 
   const deletePlan = (planId: string) => {
-    StorageManager.deleteAIWorkoutPlan(planId)
-    loadPlans()
-    toast({
-      title: "Plan Deleted",
-      description: "The workout plan has been removed.",
+    deletePlanMutation.mutate(planId, {
+      onSuccess: () => {
+        toast({
+          title: "Plan Deleted",
+          description: "The workout plan has been removed.",
+        })
+      },
     })
   }
 
@@ -99,7 +90,6 @@ export function AIWorkoutPlans() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedPlan(plan)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -174,7 +164,7 @@ export function AIWorkoutPlans() {
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground mt-2">
-                Generated on {plan.date.toLocaleDateString()}
+                Generated on {new Date(plan.date).toLocaleDateString()}
               </div>
             </CardContent>
           </Card>

@@ -1,41 +1,36 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, X, Clock, Target, Dumbbell } from "lucide-react"
+import { Plus, X, Dumbbell } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AIWorkoutPlans } from "@/components/ai-workout-plans"
-import { StorageManager } from "@/lib/storage"
+import { useCreateWorkout, useWorkouts } from "@/lib/hooks/use-workouts"
 import { Exercise, Workout } from "@/lib/types"
+
+type DraftExercise = Omit<Exercise, "id"> & { id: string }
 
 export function WorkoutInput() {
   const { toast } = useToast()
-  const [currentWorkout, setCurrentWorkout] = useState<Partial<Workout>>({
-    name: "",
-    type: "",
-    duration: 0,
-    exercises: [],
-  })
+  const { data: workoutHistory = [] } = useWorkouts()
+  const createWorkout = useCreateWorkout()
+
+  const [name, setName] = useState("")
+  const [type, setType] = useState<Workout["type"] | "">("")
+  const [duration, setDuration] = useState(0)
+  const [exercises, setExercises] = useState<DraftExercise[]>([])
   const [newExercise, setNewExercise] = useState<Partial<Exercise>>({
     name: "",
     sets: 1,
     reps: 1,
     weight: 0,
   })
-  const [workoutHistory, setWorkoutHistory] = useState<Workout[]>([])
-
-  // Load workout history from storage
-  useEffect(() => {
-    const savedHistory = StorageManager.getWorkoutHistory()
-    setWorkoutHistory(savedHistory)
-  }, [])
 
   const addExercise = () => {
     if (!newExercise.name) {
@@ -47,7 +42,7 @@ export function WorkoutInput() {
       return
     }
 
-    const exercise: Exercise = {
+    const exercise: DraftExercise = {
       id: Date.now().toString(),
       name: newExercise.name,
       sets: newExercise.sets || 1,
@@ -57,17 +52,8 @@ export function WorkoutInput() {
       notes: newExercise.notes,
     }
 
-    setCurrentWorkout((prev) => ({
-      ...prev,
-      exercises: [...(prev.exercises || []), exercise],
-    }))
-
-    setNewExercise({
-      name: "",
-      sets: 1,
-      reps: 1,
-      weight: 0,
-    })
+    setExercises((prev) => [...prev, exercise])
+    setNewExercise({ name: "", sets: 1, reps: 1, weight: 0 })
 
     toast({
       title: "Exercise Added",
@@ -76,48 +62,46 @@ export function WorkoutInput() {
   }
 
   const removeExercise = (exerciseId: string) => {
-    setCurrentWorkout((prev) => ({
-      ...prev,
-      exercises: prev.exercises?.filter((ex) => ex.id !== exerciseId) || [],
-    }))
+    setExercises((prev) => prev.filter((ex) => ex.id !== exerciseId))
   }
 
-  const saveWorkout = async () => {
-    if (!currentWorkout.name || !currentWorkout.exercises?.length) {
+  const saveWorkout = () => {
+    if (!name || !type || exercises.length === 0) {
       toast({
         title: "Error",
-        description: "Please add a workout name and at least one exercise",
+        description: "Please add a workout name, type, and at least one exercise",
         variant: "destructive",
       })
       return
     }
 
-    const workout: Workout = {
-      id: Date.now().toString(),
-      name: currentWorkout.name,
-      type: currentWorkout.type || "General",
-      duration: currentWorkout.duration || 0,
-      exercises: currentWorkout.exercises,
-      date: new Date(),
-    }
-
-    // Save to storage
-    const updatedHistory = [workout, ...workoutHistory]
-    setWorkoutHistory(updatedHistory)
-    StorageManager.saveWorkoutHistory(updatedHistory)
-
-    // Reset form
-    setCurrentWorkout({
-      name: "",
-      type: "",
-      duration: 0,
-      exercises: [],
-    })
-
-    toast({
-      title: "Workout Saved!",
-      description: "Your workout has been logged successfully",
-    })
+    createWorkout.mutate(
+      {
+        name,
+        type,
+        duration,
+        exercises: exercises.map(({ id: _id, ...rest }) => rest),
+      },
+      {
+        onSuccess: () => {
+          setName("")
+          setType("")
+          setDuration(0)
+          setExercises([])
+          toast({
+            title: "Workout Saved!",
+            description: "Your workout has been logged successfully",
+          })
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to save your workout. Please try again.",
+            variant: "destructive",
+          })
+        },
+      },
+    )
   }
 
   return (
@@ -147,16 +131,13 @@ export function WorkoutInput() {
                   <Input
                     id="workout-name"
                     placeholder="e.g., Upper Body Strength"
-                    value={currentWorkout.name || ""}
-                    onChange={(e) => setCurrentWorkout((prev) => ({ ...prev, name: e.target.value }))}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="workout-type">Workout Type</Label>
-                  <Select
-                    value={currentWorkout.type || ""}
-                    onValueChange={(value) => setCurrentWorkout((prev) => ({ ...prev, type: value }))}
-                  >
+                  <Select value={type} onValueChange={(value) => setType(value as Workout["type"])}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -164,8 +145,7 @@ export function WorkoutInput() {
                       <SelectItem value="strength">Strength Training</SelectItem>
                       <SelectItem value="cardio">Cardio</SelectItem>
                       <SelectItem value="flexibility">Flexibility</SelectItem>
-                      <SelectItem value="sports">Sports</SelectItem>
-                      <SelectItem value="general">General Fitness</SelectItem>
+                      <SelectItem value="mixed">Mixed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -177,10 +157,8 @@ export function WorkoutInput() {
                   id="duration"
                   type="number"
                   placeholder="60"
-                  value={currentWorkout.duration || ""}
-                  onChange={(e) =>
-                    setCurrentWorkout((prev) => ({ ...prev, duration: Number.parseInt(e.target.value) || 0 }))
-                  }
+                  value={duration || ""}
+                  onChange={(e) => setDuration(Number.parseInt(e.target.value) || 0)}
                 />
               </div>
             </CardContent>
@@ -268,17 +246,17 @@ export function WorkoutInput() {
           </Card>
 
           {/* Current Exercises List */}
-          {currentWorkout.exercises && currentWorkout.exercises.length > 0 && (
+          {exercises.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Current Exercises</CardTitle>
                 <CardDescription>
-                  {currentWorkout.exercises.length} exercise{currentWorkout.exercises.length !== 1 ? "s" : ""} added
+                  {exercises.length} exercise{exercises.length !== 1 ? "s" : ""} added
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {currentWorkout.exercises.map((exercise) => (
+                  {exercises.map((exercise) => (
                     <div key={exercise.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{exercise.name}</div>
@@ -300,8 +278,8 @@ export function WorkoutInput() {
                     </div>
                   ))}
                 </div>
-                <Button onClick={saveWorkout} className="w-full mt-4">
-                  Save Workout
+                <Button onClick={saveWorkout} className="w-full mt-4" disabled={createWorkout.isPending}>
+                  {createWorkout.isPending ? "Saving..." : "Save Workout"}
                 </Button>
               </CardContent>
             </Card>
@@ -327,7 +305,7 @@ export function WorkoutInput() {
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {workout.date.toLocaleDateString()}
+                          {new Date(workout.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>

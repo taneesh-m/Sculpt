@@ -9,6 +9,7 @@ import { MobileNav } from "@/components/mobile-nav"
 import { WorkoutInput } from "@/components/workout-input"
 import { DietInput } from "@/components/diet-input"
 import { UserSettings } from "@/components/user-settings"
+import { AnalyticsDashboard } from "@/components/analytics-dashboard"
 
 export function DashboardPage() {
   const [activeTab, setActiveTab] = useState("chat")
@@ -20,7 +21,7 @@ export function DashboardPage() {
       </div>
 
       <main className="flex-1">
-        <Tabs defaultValue="chat" className="h-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} className="h-full" onValueChange={setActiveTab}>
           <div className="px-4 py-2 border-b">
             <TabsList className="w-full justify-between">
               <TabsTrigger value="chat" className="flex-1">
@@ -34,6 +35,9 @@ export function DashboardPage() {
               </TabsTrigger>
               <TabsTrigger value="progress" className="flex-1">
                 Progress
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1">
+                Analytics
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1">
                 Settings
@@ -55,6 +59,10 @@ export function DashboardPage() {
 
           <TabsContent value="progress" className="p-4">
             <ProgressBadges />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="p-4">
+            <AnalyticsDashboard />
           </TabsContent>
 
           <TabsContent value="settings" className="p-4">

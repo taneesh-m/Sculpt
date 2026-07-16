@@ -1,20 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, X, Search, Utensils, Flame } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AIMealPlans } from "@/components/ai-meal-plans"
-import { StorageManager } from "@/lib/storage"
-import { FoodItem, DailyLog } from "@/lib/types"
+import { useCreateDietLogs, useDietLogs } from "@/lib/hooks/use-diet"
+import { FoodItem } from "@/lib/types"
 
-// Mock food database - in a real app, this would come from USDA API
+// Local food reference for quick-add -- USDA lookup replaces this in the
+// tool-calling agent rewrite.
 const foodDatabase = [
   { name: "Chicken Breast", calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: "100g" },
   { name: "Brown Rice", calories: 112, protein: 2.6, carbs: 23.5, fat: 0.9, unit: "100g" },
@@ -28,18 +28,14 @@ const foodDatabase = [
 
 export function DietInput() {
   const { toast } = useToast()
+  const { data: recentLogs = [] } = useDietLogs()
+  const createDietLogs = useCreateDietLogs()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFood, setSelectedFood] = useState<(typeof foodDatabase)[0] | null>(null)
   const [quantity, setQuantity] = useState(100)
-  const [mealType, setMealType] = useState("")
+  const [mealType, setMealType] = useState<FoodItem["mealType"] | "">("")
   const [todaysFoods, setTodaysFoods] = useState<FoodItem[]>([])
-  const [dietHistory, setDietHistory] = useState<DailyLog[]>([])
-
-  // Load diet history from storage
-  useEffect(() => {
-    const savedHistory = StorageManager.getDietHistory()
-    setDietHistory(savedHistory)
-  }, [])
 
   const filteredFoods = foodDatabase.filter((food) => food.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
@@ -92,31 +88,33 @@ export function DietInput() {
       return
     }
 
-    const totalCalories = todaysFoods.reduce((sum, food) => sum + food.calories, 0)
-    const totalProtein = todaysFoods.reduce((sum, food) => sum + food.protein, 0)
-    const totalCarbs = todaysFoods.reduce((sum, food) => sum + food.carbs, 0)
-    const totalFat = todaysFoods.reduce((sum, food) => sum + food.fat, 0)
-
-    const dailyLog: DailyLog = {
-      id: Date.now().toString(),
-      date: new Date(),
-      foods: todaysFoods,
-      totalCalories: Math.round(totalCalories),
-      totalProtein: Math.round(totalProtein * 10) / 10,
-      totalCarbs: Math.round(totalCarbs * 10) / 10,
-      totalFat: Math.round(totalFat * 10) / 10,
-    }
-
-    // Save to storage
-    const updatedHistory = [dailyLog, ...dietHistory]
-    setDietHistory(updatedHistory)
-    StorageManager.saveDietHistory(updatedHistory)
-    setTodaysFoods([])
-
-    toast({
-      title: "Daily Log Saved!",
-      description: "Your nutrition intake has been logged successfully",
-    })
+    createDietLogs.mutate(
+      todaysFoods.map((food) => ({
+        food_name: food.name,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        meal_type: food.mealType,
+        serving_size: `${food.quantity}${food.unit}`,
+      })),
+      {
+        onSuccess: () => {
+          setTodaysFoods([])
+          toast({
+            title: "Daily Log Saved!",
+            description: "Your nutrition intake has been logged successfully",
+          })
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to save your nutrition log. Please try again.",
+            variant: "destructive",
+          })
+        },
+      },
+    )
   }
 
   const getTotalNutrition = () => {
@@ -215,7 +213,7 @@ export function DietInput() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="meal-type">Meal Type</Label>
-                    <Select value={mealType} onValueChange={setMealType}>
+                    <Select value={mealType} onValueChange={(value) => setMealType(value as FoodItem["mealType"])}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select meal" />
                       </SelectTrigger>
@@ -270,7 +268,7 @@ export function DietInput() {
           {todaysFoods.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Today's Food Log</CardTitle>
+                <CardTitle>Today&apos;s Food Log</CardTitle>
                 <CardDescription>
                   {todaysFoods.length} food item{todaysFoods.length !== 1 ? "s" : ""} logged today
                 </CardDescription>
@@ -330,16 +328,16 @@ export function DietInput() {
                   </div>
                 ))}
 
-                <Button onClick={saveDailyLog} className="w-full">
+                <Button onClick={saveDailyLog} className="w-full" disabled={createDietLogs.isPending}>
                   <Flame className="h-4 w-4 mr-2" />
-                  Save Daily Log
+                  {createDietLogs.isPending ? "Saving..." : "Save Daily Log"}
                 </Button>
               </CardContent>
             </Card>
           )}
 
           {/* Diet History */}
-          {dietHistory.length > 0 && (
+          {recentLogs.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Recent Nutrition Logs</CardTitle>
@@ -347,19 +345,22 @@ export function DietInput() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {dietHistory.slice(0, 5).map((log) => (
+                  {recentLogs.slice(0, 10).map((log) => (
                     <div key={log.id} className="p-3 border rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium">
-                            {log.foods.length} food items logged
+                          <div className="font-medium capitalize">
+                            {log.food_name} • {log.meal_type}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {log.totalCalories} cal • {log.totalProtein}g protein • {log.totalCarbs}g carbs • {log.totalFat}g fat
+                            {log.calories} cal
+                            {log.protein !== undefined && ` • ${log.protein}g protein`}
+                            {log.carbs !== undefined && ` • ${log.carbs}g carbs`}
+                            {log.fat !== undefined && ` • ${log.fat}g fat`}
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {log.date.toLocaleDateString()}
+                          {new Date(log.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>

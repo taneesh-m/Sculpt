@@ -1,35 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Trash2, Utensils, Flame, Eye, Target } from "lucide-react"
-import { AIMealPlan } from "@/lib/types"
-import { StorageManager } from "@/lib/storage"
+import { useAIMealPlans, useDeleteAIPlan } from "@/lib/hooks/use-ai-plans"
 import { useToast } from "@/hooks/use-toast"
 
 export function AIMealPlans() {
   const { toast } = useToast()
-  const [plans, setPlans] = useState<AIMealPlan[]>([])
-  const [selectedPlan, setSelectedPlan] = useState<AIMealPlan | null>(null)
-
-  useEffect(() => {
-    loadPlans()
-  }, [])
-
-  const loadPlans = () => {
-    const savedPlans = StorageManager.getAIMealPlans()
-    setPlans(savedPlans)
-  }
+  const { data: plans } = useAIMealPlans()
+  const deletePlanMutation = useDeleteAIPlan("meal")
 
   const deletePlan = (planId: string) => {
-    StorageManager.deleteAIMealPlan(planId)
-    loadPlans()
-    toast({
-      title: "Plan Deleted",
-      description: "The meal plan has been removed.",
+    deletePlanMutation.mutate(planId, {
+      onSuccess: () => {
+        toast({
+          title: "Plan Deleted",
+          description: "The meal plan has been removed.",
+        })
+      },
     })
   }
 
@@ -73,7 +64,6 @@ export function AIMealPlans() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedPlan(plan)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -160,7 +150,7 @@ export function AIMealPlans() {
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground mt-2">
-                Generated on {plan.date.toLocaleDateString()}
+                Generated on {new Date(plan.date).toLocaleDateString()}
               </div>
             </CardContent>
           </Card>

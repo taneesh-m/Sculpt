@@ -18,6 +18,16 @@ export type UserSettings = {
   muscle_mass: number
 }
 
+// The full profiles table row: the editable UserSettings fields plus the
+// identity/audit columns owned by auth and the DB, not the client.
+export type Profile = UserSettings & {
+  id: string
+  email: string
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Exercise = {
   id: string
   name: string
@@ -31,10 +41,10 @@ export type Exercise = {
 export type Workout = {
   id: string
   name: string
-  type: string
+  type: 'strength' | 'cardio' | 'flexibility' | 'mixed'
   duration: number
   exercises: Exercise[]
-  date: Date
+  created_at: string
 }
 
 export type FoodItem = {
@@ -46,12 +56,29 @@ export type FoodItem = {
   protein: number
   carbs: number
   fat: number
-  mealType: string
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+}
+
+// A single diet_logs row as stored/returned by the API (one row per food
+// entry -- distinct from FoodItem, which is the client-side staging shape
+// used while building up "today's foods" before it's committed).
+export type DietLogRecord = {
+  id: string
+  food_name: string
+  calories: number
+  protein?: number
+  carbs?: number
+  fat?: number
+  fiber?: number
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  serving_size?: string
+  notes?: string
+  created_at: string
 }
 
 export type DailyLog = {
   id: string
-  date: Date
+  date: string
   foods: FoodItem[]
   totalCalories: number
   totalProtein: number
@@ -66,7 +93,7 @@ export type AIWorkoutPlan = {
   type: string
   duration: number
   exercises: Exercise[]
-  date: Date
+  date: string
   targetMuscleGroups?: string[]
   difficulty: 'beginner' | 'intermediate' | 'advanced'
 }
@@ -84,7 +111,7 @@ export type AIMealPlan = {
     carbs: number
     fat: number
   }[]
-  date: Date
+  date: string
   dietaryNotes?: string[]
 }
 
@@ -92,6 +119,5 @@ export type Message = {
   id: string
   content: string
   role: "user" | "assistant"
-  agent?: "orchestrator"
-  timestamp: Date
-} 
+  timestamp: string
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { MessageSquare, Award, Dumbbell, Salad, Settings } from "lucide-react"
+import { MessageSquare, Award, Dumbbell, Salad, Settings, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface MobileNavProps {
@@ -46,6 +46,15 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
       >
         <Award className="h-4 w-4" />
         <span className="sr-only">Progress</span>
+      </Button>
+      <Button
+        variant={activeTab === "analytics" ? "default" : "ghost"}
+        size="icon"
+        onClick={() => setActiveTab("analytics")}
+        className="flex-1"
+      >
+        <BarChart3 className="h-4 w-4" />
+        <span className="sr-only">Analytics</span>
       </Button>
       <Button
         variant={activeTab === "settings" ? "default" : "ghost"}
