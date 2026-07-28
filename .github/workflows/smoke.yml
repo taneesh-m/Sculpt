@@ -10,7 +10,14 @@ on:
 
 jobs:
   smoke:
-    if: github.event.deployment_status.state == 'success'
+    # Production only: Vercel guards preview deployments behind an SSO/auth
+    # page, so curl would get Vercel's login page instead of the app. Previews
+    # are covered by the hermetic e2e job in ci.yml. (If you enable Vercel
+    # Deployment Protection for Production too, this job can't reach the app --
+    # disable protection for prod or drop this job.)
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      contains(github.event.deployment_status.environment, 'Production')
     runs-on: ubuntu-latest
     steps:
       - name: Smoke test the deployment
