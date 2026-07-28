@@ -1,30 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, X, Search, Utensils, Flame } from "lucide-react"
+import { Plus, X, Search, Utensils, Flame, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AIMealPlans } from "@/components/ai-meal-plans"
-import { useCreateDietLogs, useDietLogs } from "@/lib/hooks/use-diet"
+import { useCreateDietLogs, useDietLogs, useFoodSearch, type FoodSearchResult } from "@/lib/hooks/use-diet"
 import { FoodItem } from "@/lib/types"
-
-// Local food reference for quick-add -- USDA lookup replaces this in the
-// tool-calling agent rewrite.
-const foodDatabase = [
-  { name: "Chicken Breast", calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: "100g" },
-  { name: "Brown Rice", calories: 112, protein: 2.6, carbs: 23.5, fat: 0.9, unit: "100g" },
-  { name: "Broccoli", calories: 34, protein: 2.8, carbs: 6.6, fat: 0.4, unit: "100g" },
-  { name: "Salmon", calories: 206, protein: 22.1, carbs: 0, fat: 13.4, unit: "100g" },
-  { name: "Sweet Potato", calories: 86, protein: 1.6, carbs: 20.1, fat: 0.1, unit: "100g" },
-  { name: "Greek Yogurt", calories: 59, protein: 10, carbs: 3.6, fat: 0.4, unit: "100g" },
-  { name: "Banana", calories: 89, protein: 1.1, carbs: 22.8, fat: 0.3, unit: "100g" },
-  { name: "Almonds", calories: 579, protein: 21.2, carbs: 21.6, fat: 49.9, unit: "100g" },
-]
 
 export function DietInput() {
   const { toast } = useToast()
@@ -32,12 +19,22 @@ export function DietInput() {
   const createDietLogs = useCreateDietLogs()
 
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedFood, setSelectedFood] = useState<(typeof foodDatabase)[0] | null>(null)
+  const [debouncedTerm, setDebouncedTerm] = useState("")
+  const [selectedFood, setSelectedFood] = useState<FoodSearchResult | null>(null)
   const [quantity, setQuantity] = useState(100)
   const [mealType, setMealType] = useState<FoodItem["mealType"] | "">("")
   const [todaysFoods, setTodaysFoods] = useState<FoodItem[]>([])
 
-  const filteredFoods = foodDatabase.filter((food) => food.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Debounce the search box so we hit USDA at most once per pause in typing,
+  // not once per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTerm(searchTerm), 350)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  const { data: searchResults = [], isFetching: isSearching, error: searchError } = useFoodSearch(debouncedTerm)
+  // Hide the results list once a food is picked (searchTerm == its name).
+  const showResults = searchTerm.trim().length >= 2 && selectedFood?.name !== searchTerm
 
   const addFood = () => {
     if (!selectedFood || !mealType) {
@@ -171,31 +168,45 @@ export function DietInput() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="food-search"
-                    placeholder="Search for foods..."
+                    placeholder="Search 600,000+ foods (USDA)..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value)
+                      setSelectedFood(null)
+                    }}
                     className="pl-10"
                   />
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
                 </div>
               </div>
 
-              {searchTerm && (
-                <div className="border rounded-lg max-h-40 overflow-y-auto">
-                  {filteredFoods.map((food, index) => (
-                    <button
-                      key={index}
-                      className="w-full text-left p-3 hover:bg-muted border-b last:border-b-0"
-                      onClick={() => {
-                        setSelectedFood(food)
-                        setSearchTerm(food.name)
-                      }}
-                    >
-                      <div className="font-medium">{food.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {food.calories} cal, {food.protein}g protein per {food.unit}
-                      </div>
-                    </button>
-                  ))}
+              {showResults && (
+                <div className="border rounded-lg max-h-56 overflow-y-auto">
+                  {searchError ? (
+                    <div className="p-3 text-sm text-destructive">
+                      {searchError instanceof Error ? searchError.message : "Food search failed. Try again."}
+                    </div>
+                  ) : searchResults.length === 0 && !isSearching ? (
+                    <div className="p-3 text-sm text-muted-foreground">No foods found for &ldquo;{debouncedTerm}&rdquo;.</div>
+                  ) : (
+                    searchResults.map((food, index) => (
+                      <button
+                        key={index}
+                        className="w-full text-left p-3 hover:bg-muted border-b last:border-b-0"
+                        onClick={() => {
+                          setSelectedFood(food)
+                          setSearchTerm(food.name)
+                        }}
+                      >
+                        <div className="font-medium">{food.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {food.calories} cal, {food.protein}g protein per 100g
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
 
