@@ -32,6 +32,7 @@ export async function updateSession(request: NextRequest) {
 
   const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path))
   const isApiRoute = request.nextUrl.pathname.startsWith("/api")
+  const isOnboardingPath = request.nextUrl.pathname.startsWith("/onboarding")
 
   // API routes return their own 401 JSON via createClient() + auth.getUser()
   // in the handler -- a redirect here would send a fetch() caller an HTML
@@ -40,6 +41,28 @@ export async function updateSession(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = "/login"
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Gate authenticated users through the initial profiling wizard until they
+  // finish it. Skipped for API routes (JSON callers) and public auth pages.
+  if (user && !isApiRoute && !isPublicPath) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle()
+    const onboarded = profile?.onboarding_completed ?? false
+
+    if (!onboarded && !isOnboardingPath) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = "/onboarding"
+      return NextResponse.redirect(redirectUrl)
+    }
+    if (onboarded && isOnboardingPath) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = "/"
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   return supabaseResponse

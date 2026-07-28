@@ -31,6 +31,7 @@ function toProfile(p: SyntheticProfile): Profile {
     id: "eval",
     email: "eval@example.com",
     avatar_url: null,
+    onboarding_completed: true,
     height_cm: 0,
     weight_kg: 0,
     gender: "other",
