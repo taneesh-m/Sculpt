@@ -97,10 +97,7 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR: `test`
 (lint/typecheck/unit) and `e2e`, which spins up an ephemeral Supabase
 stack on the runner (via the Supabase CLI + Docker), applies all
 migrations, and runs the full Playwright suite against it -- hermetic, so
-it never touches a hosted database. Separately, `.github/workflows/smoke.yml`
-runs a lightweight smoke test (login page renders, unauthenticated API
-returns 401) against each successful Vercel deployment via its
-`deployment_status` webhook.
+it never touches a hosted database.
 
 ## Personalization eval
 
