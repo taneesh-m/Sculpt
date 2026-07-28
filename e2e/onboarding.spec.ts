@@ -71,6 +71,56 @@ test("sign up, complete onboarding, log a workout via the form, see it persist",
   await expect(page.getByText("E2E Leg Day")).toBeVisible()
 })
 
+test("onboarding accepts imperial units and stores metric", async ({ page }) => {
+  const email = `e2e-imperial+${Date.now()}@example.com`
+
+  await page.goto("/signup")
+  await page.fill("#name", "Imperial User")
+  await page.fill("#email", email)
+  await page.fill("#password", "password123")
+  await page.click('button[type="submit"]')
+  await page.waitForURL("/onboarding")
+
+  // Step 1
+  await page.getByRole("combobox", { name: "Fitness goals" }).click()
+  await page.getByRole("option", { name: "General fitness" }).click()
+  await page.keyboard.press("Escape")
+  await page.getByRole("combobox", { name: "Weight goal" }).click()
+  await page.getByRole("option", { name: "Maintain weight" }).click()
+  await page.getByRole("button", { name: "Next", exact: true }).click()
+
+  // Step 2 -- switch to imperial: 5 ft 11 in, 175 lb
+  await page.getByRole("combobox", { name: "Gender" }).click()
+  await page.getByRole("option", { name: "Female", exact: true }).click()
+  await page.getByRole("radio", { name: "Imperial units" }).click()
+  await page.fill("#age", "28")
+  await page.fill("#height-ft", "5")
+  await page.fill("#height-in", "11")
+  await page.fill("#weight-lb", "175")
+  await page.getByRole("combobox", { name: "Current fitness level" }).click()
+  await page.getByRole("option", { name: "Beginner" }).click()
+  await page.getByRole("button", { name: "Next", exact: true }).click()
+
+  // Step 3
+  await page.getByRole("combobox", { name: "Available equipment" }).click()
+  await page.getByRole("option", { name: "Dumbbells" }).click()
+  await page.keyboard.press("Escape")
+  await page.getByRole("combobox", { name: "Workout duration" }).click()
+  await page.getByRole("option", { name: "30 minutes" }).click()
+  await page.getByRole("combobox", { name: "Workout frequency" }).click()
+  await page.getByRole("option", { name: "3 days / week" }).click()
+  await page.getByRole("button", { name: "Next", exact: true }).click()
+
+  // Step 4
+  await page.getByRole("combobox", { name: "Dietary preferences" }).click()
+  await page.getByRole("option", { name: "No restrictions" }).click()
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: /finish/i }).click()
+
+  await page.waitForURL("/")
+  await expect(page.getByRole("tab", { name: "Chat" })).toBeVisible()
+})
+
 test("logged-out visitors are redirected to /login", async ({ page }) => {
   await page.goto("/")
   await page.waitForURL("/login")

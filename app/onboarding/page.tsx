@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { MultiSelect } from "@/components/multi-select"
 import { useToast } from "@/hooks/use-toast"
 import { useUpdateProfile } from "@/lib/hooks/use-profile"
@@ -25,13 +26,19 @@ import {
 } from "@/lib/onboarding-options"
 import type { Profile } from "@/lib/types"
 
+type UnitSystem = "metric" | "imperial"
+
 type OnboardingForm = {
   fitness_goals: string[]
   weight_goal: Profile["weight_goal"] | ""
   gender: Profile["gender"] | ""
   age: string
-  height_cm: string
-  weight_kg: string
+  unit_system: UnitSystem
+  height_cm: string // metric height input
+  height_ft: string // imperial height input (feet)
+  height_in: string // imperial height input (inches)
+  weight_kg: string // metric weight input
+  weight_lb: string // imperial weight input (pounds)
   current_fitness_level: Profile["current_fitness_level"] | ""
   available_equipment: string[]
   preferred_workout_duration: string
@@ -52,8 +59,12 @@ export default function OnboardingPage() {
     weight_goal: "",
     gender: "",
     age: "",
+    unit_system: "metric",
     height_cm: "",
+    height_ft: "",
+    height_in: "",
     weight_kg: "",
+    weight_lb: "",
     current_fitness_level: "",
     available_equipment: [],
     preferred_workout_duration: "",
@@ -64,6 +75,19 @@ export default function OnboardingPage() {
   const set = <K extends keyof OnboardingForm>(key: K, value: OnboardingForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  // Canonical metric values derived from whichever unit system is active.
+  // The DB always stores height in cm and weight in kg.
+  function toMetricHeightCm(): number {
+    if (form.unit_system === "metric") return Number(form.height_cm)
+    const totalInches = Number(form.height_ft || 0) * 12 + Number(form.height_in || 0)
+    return Math.round(totalInches * 2.54)
+  }
+
+  function toMetricWeightKg(): number {
+    if (form.unit_system === "metric") return Number(form.weight_kg)
+    return Math.round(Number(form.weight_lb) * 0.453592 * 100) / 100
+  }
+
   function validateStep(current: number): string | null {
     switch (current) {
       case 0:
@@ -73,8 +97,8 @@ export default function OnboardingPage() {
       case 1:
         if (!form.gender) return "Select a gender."
         if (!form.age || Number(form.age) <= 0) return "Enter a valid age."
-        if (!form.height_cm || Number(form.height_cm) <= 0) return "Enter a valid height."
-        if (!form.weight_kg || Number(form.weight_kg) <= 0) return "Enter a valid weight."
+        if (toMetricHeightCm() <= 0) return "Enter a valid height."
+        if (toMetricWeightKg() <= 0) return "Enter a valid weight."
         if (!form.current_fitness_level) return "Select your current fitness level."
         return null
       case 2:
@@ -116,8 +140,8 @@ export default function OnboardingPage() {
         weight_goal: form.weight_goal as Profile["weight_goal"],
         gender: form.gender as Profile["gender"],
         age: Number(form.age),
-        height_cm: Number(form.height_cm),
-        weight_kg: Number(form.weight_kg),
+        height_cm: toMetricHeightCm(),
+        weight_kg: toMetricWeightKg(),
         current_fitness_level: form.current_fitness_level as Profile["current_fitness_level"],
         available_equipment: form.available_equipment,
         preferred_workout_duration: Number(form.preferred_workout_duration),
@@ -203,38 +227,88 @@ export default function OnboardingPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min="1"
-                    value={form.age}
-                    onChange={(e) => set("age", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="height">Height (cm)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    min="1"
-                    value={form.height_cm}
-                    onChange={(e) => set("height_cm", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    min="1"
-                    value={form.weight_kg}
-                    onChange={(e) => set("weight_kg", e.target.value)}
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <Label>Units</Label>
+                <ToggleGroup
+                  type="single"
+                  size="sm"
+                  value={form.unit_system}
+                  onValueChange={(v) => {
+                    if (v) set("unit_system", v as UnitSystem)
+                  }}
+                >
+                  <ToggleGroupItem value="metric" aria-label="Metric units">
+                    Metric
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="imperial" aria-label="Imperial units">
+                    Imperial
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="age">Age</Label>
+                <Input id="age" type="number" min="1" value={form.age} onChange={(e) => set("age", e.target.value)} />
+              </div>
+
+              {form.unit_system === "metric" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="height">Height (cm)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      min="1"
+                      value={form.height_cm}
+                      onChange={(e) => set("height_cm", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      min="1"
+                      value={form.weight_kg}
+                      onChange={(e) => set("weight_kg", e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="height-ft">Height (ft)</Label>
+                    <Input
+                      id="height-ft"
+                      type="number"
+                      min="0"
+                      value={form.height_ft}
+                      onChange={(e) => set("height_ft", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="height-in">Height (in)</Label>
+                    <Input
+                      id="height-in"
+                      type="number"
+                      min="0"
+                      max="11"
+                      value={form.height_in}
+                      onChange={(e) => set("height_in", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight-lb">Weight (lb)</Label>
+                    <Input
+                      id="weight-lb"
+                      type="number"
+                      min="1"
+                      value={form.weight_lb}
+                      onChange={(e) => set("weight_lb", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Current fitness level</Label>
                 <Select
