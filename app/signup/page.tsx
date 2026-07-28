@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Dumbbell } from "lucide-react"
+import { Dumbbell, MailCheck } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -20,17 +20,26 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
+  // Set once signUp() succeeds but Supabase hasn't returned a session yet,
+  // which means "Confirm email" is on and the account is pending
+  // confirmation. Swaps the form out for a "check your email" card.
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null)
+  const [isResending, setIsResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendError, setResendError] = useState<string | null>(null)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
 
@@ -38,6 +47,14 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message)
+      return
+    }
+
+    if (!data.session) {
+      // Email confirmation is required before a session is issued. Don't
+      // redirect into the app (middleware would just bounce back to
+      // /login with no explanation) — show a "check your email" state.
+      setPendingConfirmationEmail(email)
       return
     }
 
@@ -61,6 +78,76 @@ export default function SignupPage() {
       setError(error.message)
       setIsGoogleLoading(false)
     }
+  }
+
+  async function handleResend() {
+    if (!pendingConfirmationEmail) return
+
+    setIsResending(true)
+    setResendSuccess(false)
+    setResendError(null)
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingConfirmationEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    setIsResending(false)
+
+    if (error) {
+      setResendError(error.message)
+      return
+    }
+
+    setResendSuccess(true)
+    setTimeout(() => setResendSuccess(false), 5000)
+  }
+
+  if (pendingConfirmationEmail) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="items-center text-center">
+            <MailCheck className="mb-2 h-8 w-8" />
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We sent a confirmation link to <span className="font-medium text-foreground">{pendingConfirmationEmail}</span>.
+              Click it to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {resendError && <p className="text-sm text-destructive">{resendError}</p>}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleResend}
+              disabled={isResending || resendSuccess}
+            >
+              {isResending ? "Sending..." : resendSuccess ? "Sent!" : "Resend email"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Wrong email?{" "}
+              <button
+                type="button"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                onClick={() => {
+                  setPendingConfirmationEmail(null)
+                  setResendError(null)
+                  setResendSuccess(false)
+                }}
+              >
+                Go back
+              </button>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

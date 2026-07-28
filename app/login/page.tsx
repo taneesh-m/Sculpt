@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Dumbbell } from "lucide-react"
+import { isAuthApiError } from "@supabase/supabase-js"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -16,12 +17,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendError, setResendError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setIsEmailNotConfirmed(false)
+    setResendSuccess(false)
+    setResendError(null)
     setIsLoading(true)
 
     const supabase = createClient()
@@ -30,7 +38,12 @@ export default function LoginPage() {
     setIsLoading(false)
 
     if (error) {
-      setError(error.message)
+      if (isAuthApiError(error) && error.code === "email_not_confirmed") {
+        setIsEmailNotConfirmed(true)
+        setError("Your email isn't confirmed yet. Check your inbox for the confirmation link.")
+      } else {
+        setError(error.message)
+      }
       return
     }
 
@@ -54,6 +67,33 @@ export default function LoginPage() {
       setError(error.message)
       setIsGoogleLoading(false)
     }
+  }
+
+  async function handleResend() {
+    if (!email) return
+
+    setIsResending(true)
+    setResendSuccess(false)
+    setResendError(null)
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    setIsResending(false)
+
+    if (error) {
+      setResendError(error.message)
+      return
+    }
+
+    setResendSuccess(true)
+    setTimeout(() => setResendSuccess(false), 5000)
   }
 
   return (
@@ -89,6 +129,20 @@ export default function LoginPage() {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
+            {isEmailNotConfirmed && (
+              <div className="space-y-2">
+                {resendError && <p className="text-sm text-destructive">{resendError}</p>}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResend}
+                  disabled={isResending || resendSuccess}
+                >
+                  {isResending ? "Sending..." : resendSuccess ? "Sent!" : "Resend confirmation email"}
+                </Button>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
