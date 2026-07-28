@@ -4,7 +4,7 @@
 -- concepts (separate tabs).
 
 create table if not exists ai_plans (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     plan_type text not null check (plan_type in ('workout', 'meal')),
     payload jsonb not null,

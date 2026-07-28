@@ -2,8 +2,6 @@
 -- nutrition goals, progress tracking, chat history. RLS scopes every table to
 -- its owning user via auth.uid().
 
-create extension if not exists "uuid-ossp";
-
 create table if not exists profiles (
     id uuid references auth.users(id) on delete cascade primary key,
     email text unique not null,
@@ -32,7 +30,7 @@ create table if not exists profiles (
 );
 
 create table if not exists workouts (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     name text not null,
     type text check (type in ('strength', 'cardio', 'flexibility', 'mixed')) not null,
@@ -43,7 +41,7 @@ create table if not exists workouts (
 );
 
 create table if not exists exercises (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     workout_id uuid references workouts(id) on delete cascade not null,
     name text not null,
     sets integer,
@@ -56,7 +54,7 @@ create table if not exists exercises (
 );
 
 create table if not exists diet_logs (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     food_name text not null,
     calories decimal(8,2) not null,
@@ -72,7 +70,7 @@ create table if not exists diet_logs (
 );
 
 create table if not exists nutrition_goals (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade unique not null,
     daily_calories integer,
     daily_protein decimal(6,2),
@@ -86,7 +84,7 @@ create table if not exists nutrition_goals (
 );
 
 create table if not exists progress_tracking (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     weight decimal(5,2),
     body_fat_percentage decimal(4,2),
@@ -97,7 +95,7 @@ create table if not exists progress_tracking (
 );
 
 create table if not exists chat_history (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     user_message text not null,
     ai_response text not null,

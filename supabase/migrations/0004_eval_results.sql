@@ -6,7 +6,7 @@
 -- by default and keeps results readable only via the service role.
 
 create table if not exists eval_runs (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     run_at timestamptz default now(),
     variant text not null check (variant in ('baseline', 'profile_conditioned')),
     eval_case_id text not null,

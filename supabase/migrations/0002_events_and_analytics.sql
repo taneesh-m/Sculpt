@@ -2,7 +2,7 @@
 -- the progress/streak logic (phase 6) and any future analytics dashboard.
 
 create table if not exists events (
-    id uuid default uuid_generate_v4() primary key,
+    id uuid default gen_random_uuid() primary key,
     user_id uuid references profiles(id) on delete cascade not null,
     event_type text not null check (event_type in (
         'workout_logged',
