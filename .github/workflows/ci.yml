@@ -32,7 +32,56 @@ jobs:
       - name: Unit + integration tests
         run: pnpm test
 
-      # Playwright e2e is intentionally not run here -- it needs a live
-      # Supabase project (local Docker Postgres isn't available/practical
-      # in this CI setup) and real auth flows. Run `pnpm test:e2e` locally
-      # before merging changes that touch auth, data, or routing.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # GitHub-hosted runners have Docker, so we can spin up a real, ephemeral
+      # Supabase stack (Postgres + Auth + all migrations applied) and run the
+      # full signup/onboarding/CRUD e2e against it -- hermetic, no hosted data
+      # touched, and email confirmations are off in the local config so signup
+      # returns a session immediately.
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase (applies migrations)
+        run: supabase start
+
+      - name: Export local Supabase env
+        run: |
+          # `-o env` prints the whole var set (dotenv-style, values may be
+          # quoted); pull out just the one renamed line per call and strip
+          # quotes so $GITHUB_ENV gets a clean KEY=value.
+          supabase status -o env --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+            | grep '^NEXT_PUBLIC_SUPABASE_URL=' | tr -d '"' >> "$GITHUB_ENV"
+          supabase status -o env --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            | grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' | tr -d '"' >> "$GITHUB_ENV"
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

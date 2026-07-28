@@ -1,0 +1,38 @@
+name: Deploy smoke test
+
+# Vercel posts a deployment_status to GitHub when a deploy finishes. When one
+# succeeds, hit the live URL with a couple of cheap checks to confirm the
+# deployment actually came up and its Supabase env is wired -- without signing
+# up a user (hosted Supabase has email confirmation on, so a full e2e can't
+# run here; that lives in the hermetic CI job instead).
+on:
+  deployment_status:
+
+jobs:
+  smoke:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test the deployment
+        env:
+          URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          set -euo pipefail
+          echo "Smoke-testing $URL"
+
+          # 1. The login page renders (server-rendered HTML contains its copy).
+          login_body=$(curl -sSfL "$URL/login")
+          echo "$login_body" | grep -qi "welcome back" \
+            || { echo "::error::/login did not render expected content"; exit 1; }
+          echo "login page: OK"
+
+          # 2. An unauthenticated API call returns 401 (not 500). A 401 proves
+          #    the server Supabase client initialized from real env vars and
+          #    ran auth.getUser(); a 500 would mean the deploy's env is broken.
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/workouts")
+          echo "GET /api/workouts -> $code"
+          test "$code" = "401" \
+            || { echo "::error::expected 401 from /api/workouts, got $code"; exit 1; }
+          echo "api auth gate: OK"
+
+          echo "Smoke test passed."
