@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Dumbbell } from "lucide-react"
 
 import { UserMenu } from "@/components/auth/user-menu"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function MainNav() {
   return (
@@ -12,7 +13,10 @@ export function MainNav() {
         <Dumbbell className="h-6 w-6" />
         <span>Sculpt</span>
       </Link>
-      <UserMenu />
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <UserMenu />
+      </div>
     </div>
   )
 }
