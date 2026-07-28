@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, X, Search, Utensils, Flame, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { AIMealPlans } from "@/components/ai-meal-plans"
+import { MealPlanTemplates } from "@/components/meal-plan-templates"
 import { useCreateDietLogs, useDietLogs, useFoodSearch, type FoodSearchResult } from "@/lib/hooks/use-diet"
-import { FoodItem } from "@/lib/types"
+import { AIMealPlan, FoodItem } from "@/lib/types"
 
 export function DietInput() {
   const { toast } = useToast()
@@ -35,6 +34,32 @@ export function DietInput() {
   const { data: searchResults = [], isFetching: isSearching, error: searchError } = useFoodSearch(debouncedTerm)
   // Hide the results list once a food is picked (searchTerm == its name).
   const showResults = searchTerm.trim().length >= 2 && selectedFood?.name !== searchTerm
+
+  // Prefill today's food log from an AI meal plan. Each meal's name maps to a
+  // meal type; the foods are editable/removable before saving.
+  const applyMealPlan = (plan: AIMealPlan) => {
+    const mealTypes: FoodItem["mealType"][] = ["breakfast", "lunch", "dinner", "snack"]
+    const foods: FoodItem[] = plan.meals.flatMap((meal, mealIndex) => {
+      const lowered = meal.name.toLowerCase()
+      const mealType = mealTypes.find((mt) => lowered.includes(mt)) ?? "snack"
+      return meal.foods.map((food, foodIndex) => ({
+        id: `${Date.now()}-${mealIndex}-${foodIndex}`,
+        name: food.name,
+        quantity: food.quantity,
+        unit: food.unit,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        mealType,
+      }))
+    })
+    setTodaysFoods(foods)
+    toast({
+      title: "Template loaded",
+      description: `"${plan.title}" filled in below -- edit anything, then save your log.`,
+    })
+  }
 
   const addFood = () => {
     if (!selectedFood || !mealType) {
@@ -148,13 +173,8 @@ export function DietInput() {
         <h2 className="text-2xl font-bold">Nutrition Tracking</h2>
       </div>
 
-      <Tabs defaultValue="log" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="log">Log Nutrition</TabsTrigger>
-          <TabsTrigger value="ai-plans">AI Plans</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="log" className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
           {/* Food Search and Add */}
           <Card>
             <CardHeader>
@@ -380,12 +400,12 @@ export function DietInput() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
+        </div>
 
-        <TabsContent value="ai-plans">
-          <AIMealPlans />
-        </TabsContent>
-      </Tabs>
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <MealPlanTemplates onUse={applyMealPlan} />
+        </div>
+      </div>
     </div>
   )
 }

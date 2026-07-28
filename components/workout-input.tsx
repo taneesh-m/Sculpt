@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, X, Dumbbell } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { AIWorkoutPlans } from "@/components/ai-workout-plans"
+import { WorkoutPlanTemplates } from "@/components/workout-plan-templates"
 import { useCreateWorkout, useWorkouts } from "@/lib/hooks/use-workouts"
-import { Exercise, Workout } from "@/lib/types"
+import { AIWorkoutPlan, Exercise, Workout } from "@/lib/types"
 
 type DraftExercise = Omit<Exercise, "id"> & { id: string }
 
@@ -58,6 +57,31 @@ export function WorkoutInput() {
     toast({
       title: "Exercise Added",
       description: `${exercise.name} has been added to your workout`,
+    })
+  }
+
+  // Prefill the log form from an AI-generated plan. Values are editable --
+  // the plan is a starting point, not a locked record.
+  const applyPlan = (plan: AIWorkoutPlan) => {
+    setName(plan.title)
+    setType((["strength", "cardio", "flexibility", "mixed"] as const).includes(plan.type as Workout["type"])
+      ? (plan.type as Workout["type"])
+      : "mixed")
+    setDuration(plan.duration)
+    setExercises(
+      plan.exercises.map((ex, i) => ({
+        id: `${Date.now()}-${i}`,
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        duration: ex.duration,
+        notes: ex.notes,
+      })),
+    )
+    toast({
+      title: "Template loaded",
+      description: `"${plan.title}" filled in below -- edit anything, then save.`,
     })
   }
 
@@ -111,13 +135,8 @@ export function WorkoutInput() {
         <h2 className="text-2xl font-bold">Workout Tracking</h2>
       </div>
 
-      <Tabs defaultValue="log" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="log">Log Workout</TabsTrigger>
-          <TabsTrigger value="ai-plans">AI Plans</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="log" className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
           {/* Current Workout Form */}
           <Card>
             <CardHeader>
@@ -314,12 +333,12 @@ export function WorkoutInput() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
+        </div>
 
-        <TabsContent value="ai-plans">
-          <AIWorkoutPlans />
-        </TabsContent>
-      </Tabs>
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <WorkoutPlanTemplates onUse={applyPlan} />
+        </div>
+      </div>
     </div>
   )
 }
