@@ -5,8 +5,8 @@
 
 export type UnitSystem = "metric" | "imperial"
 
-export const KG_PER_LB = 0.453592
-export const CM_PER_IN = 2.54
+const KG_PER_LB = 0.453592
+const CM_PER_IN = 2.54
 
 export function kgToLb(kg: number): number {
   return kg / KG_PER_LB

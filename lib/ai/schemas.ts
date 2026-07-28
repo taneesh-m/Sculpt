@@ -5,7 +5,7 @@ import { z } from "zod"
 // backed tools, instead of the old approach (lib/ai-parser.ts) of scraping
 // structure out of free-text prose after the fact.
 
-export const exerciseSchema = z.object({
+const exerciseSchema = z.object({
   name: z.string(),
   sets: z.number(),
   reps: z.number(),
@@ -24,7 +24,7 @@ export const workoutPlanSchema = z.object({
   exercises: z.array(exerciseSchema),
 })
 
-export const foodItemSchema = z.object({
+const foodItemSchema = z.object({
   name: z.string(),
   quantity: z.number(),
   unit: z.string(),

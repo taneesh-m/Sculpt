@@ -78,16 +78,6 @@ export type DietLogRecord = {
   created_at: string
 }
 
-export type DailyLog = {
-  id: string
-  date: string
-  foods: FoodItem[]
-  totalCalories: number
-  totalProtein: number
-  totalCarbs: number
-  totalFat: number
-}
-
 export type AIWorkoutPlan = {
   id: string
   title: string
@@ -115,11 +105,4 @@ export type AIMealPlan = {
   }[]
   date: string
   dietaryNotes?: string[]
-}
-
-export type Message = {
-  id: string
-  content: string
-  role: "user" | "assistant"
-  timestamp: string
 }

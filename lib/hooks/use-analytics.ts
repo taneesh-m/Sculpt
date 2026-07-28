@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
-export type AnalyticsDay = { day: string; calories: number; workouts: number }
+type AnalyticsDay = { day: string; calories: number; workouts: number }
 
 async function fetchAnalyticsSummary(): Promise<AnalyticsDay[]> {
   const res = await fetch("/api/analytics/summary")
