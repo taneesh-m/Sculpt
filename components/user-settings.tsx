@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Badge } from "@/components/ui/badge"
 import { Settings, Save, Edit } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useProfile, useUpdateProfile } from "@/lib/hooks/use-profile"
+import { cmToFtIn, ftInToCm, kgToLbDisplay, lbToKg, type UnitSystem } from "@/lib/units"
 import type { UserSettings as UserSettingsType } from "@/lib/types"
 
 export function UserSettings() {
@@ -30,6 +32,8 @@ export function UserSettings() {
   if (isLoading || !settings) {
     return <div className="text-muted-foreground">Loading settings...</div>
   }
+
+  const imperial = settings.unit_system === "imperial"
 
   const saveSettings = () => {
     updateProfile.mutate(settings, {
@@ -98,6 +102,25 @@ export function UserSettings() {
             <CardDescription>Your personal details and measurements</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Units</Label>
+              <ToggleGroup
+                type="single"
+                size="sm"
+                value={settings.unit_system}
+                disabled={!isEditing}
+                onValueChange={(v) => {
+                  if (v) setSettings((prev) => (prev ? { ...prev, unit_system: v as UnitSystem } : prev))
+                }}
+              >
+                <ToggleGroupItem value="metric" aria-label="Metric units">
+                  Metric
+                </ToggleGroupItem>
+                <ToggleGroupItem value="imperial" aria-label="Imperial units">
+                  Imperial
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -142,34 +165,87 @@ export function UserSettings() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="height">Height (cm)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={settings.height_cm}
-                  onChange={(e) =>
-                    setSettings((prev) => (prev ? { ...prev, height_cm: Number(e.target.value) || 0 } : prev))
-                  }
-                  disabled={!isEditing}
-                  placeholder="175"
-                />
+            {imperial ? (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="height-ft">Height (ft)</Label>
+                  <Input
+                    id="height-ft"
+                    type="number"
+                    min="0"
+                    value={cmToFtIn(settings.height_cm).ft}
+                    onChange={(e) =>
+                      setSettings((prev) =>
+                        prev
+                          ? { ...prev, height_cm: ftInToCm(Number(e.target.value) || 0, cmToFtIn(prev.height_cm).in) }
+                          : prev,
+                      )
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height-in">Height (in)</Label>
+                  <Input
+                    id="height-in"
+                    type="number"
+                    min="0"
+                    max="11"
+                    value={cmToFtIn(settings.height_cm).in}
+                    onChange={(e) =>
+                      setSettings((prev) =>
+                        prev
+                          ? { ...prev, height_cm: ftInToCm(cmToFtIn(prev.height_cm).ft, Number(e.target.value) || 0) }
+                          : prev,
+                      )
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight (lb)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    min="0"
+                    value={kgToLbDisplay(settings.weight_kg)}
+                    onChange={(e) =>
+                      setSettings((prev) => (prev ? { ...prev, weight_kg: lbToKg(Number(e.target.value) || 0) } : prev))
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight (kg)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  value={settings.weight_kg}
-                  onChange={(e) =>
-                    setSettings((prev) => (prev ? { ...prev, weight_kg: Number(e.target.value) || 0 } : prev))
-                  }
-                  disabled={!isEditing}
-                  placeholder="70"
-                />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={settings.height_cm}
+                    onChange={(e) =>
+                      setSettings((prev) => (prev ? { ...prev, height_cm: Number(e.target.value) || 0 } : prev))
+                    }
+                    disabled={!isEditing}
+                    placeholder="175"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={settings.weight_kg}
+                    onChange={(e) =>
+                      setSettings((prev) => (prev ? { ...prev, weight_kg: Number(e.target.value) || 0 } : prev))
+                    }
+                    disabled={!isEditing}
+                    placeholder="70"
+                  />
+                </div>
               </div>
-            </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="activity">Activity Level</Label>
               <Select
@@ -333,14 +409,15 @@ export function UserSettings() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="target-weight">Target Weight (kg)</Label>
+                <Label htmlFor="target-weight">Target Weight ({imperial ? "lb" : "kg"})</Label>
                 <Input
                   id="target-weight"
                   type="number"
-                  value={settings.target_weight}
-                  onChange={(e) =>
-                    setSettings((prev) => (prev ? { ...prev, target_weight: Number(e.target.value) || 0 } : prev))
-                  }
+                  value={imperial ? kgToLbDisplay(settings.target_weight) : settings.target_weight}
+                  onChange={(e) => {
+                    const n = Number(e.target.value) || 0
+                    setSettings((prev) => (prev ? { ...prev, target_weight: imperial ? lbToKg(n) : n } : prev))
+                  }}
                   disabled={!isEditing}
                   placeholder="65"
                 />
@@ -365,17 +442,17 @@ export function UserSettings() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="muscle-mass">Muscle Mass (kg)</Label>
+              <Label htmlFor="muscle-mass">Muscle Mass ({imperial ? "lb" : "kg"})</Label>
               <Input
                 id="muscle-mass"
                 type="number"
                 min="0"
-                max="200"
-                step="0.1"
-                value={settings.muscle_mass}
-                onChange={(e) =>
-                  setSettings((prev) => (prev ? { ...prev, muscle_mass: Number(e.target.value) || 0 } : prev))
-                }
+                step={imperial ? "1" : "0.1"}
+                value={imperial ? kgToLbDisplay(settings.muscle_mass) : settings.muscle_mass}
+                onChange={(e) => {
+                  const n = Number(e.target.value) || 0
+                  setSettings((prev) => (prev ? { ...prev, muscle_mass: imperial ? lbToKg(n) : n } : prev))
+                }}
                 disabled={!isEditing}
                 placeholder="60"
               />

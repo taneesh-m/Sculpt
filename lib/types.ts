@@ -16,6 +16,7 @@ export type UserSettings = {
   target_weight: number
   body_fat_percentage: number
   muscle_mass: number
+  unit_system: 'metric' | 'imperial'
 }
 
 // The full profiles table row: the editable UserSettings fields plus the

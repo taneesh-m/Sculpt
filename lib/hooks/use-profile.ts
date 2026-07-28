@@ -25,6 +25,7 @@ function normalizeProfile(profile: Profile): Profile {
     dietary_restrictions: profile.dietary_restrictions ?? [],
     available_equipment: profile.available_equipment ?? [],
     onboarding_completed: profile.onboarding_completed ?? false,
+    unit_system: profile.unit_system ?? "metric",
   }
 }
 

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { MultiSelect } from "@/components/multi-select"
 import { useToast } from "@/hooks/use-toast"
+import { ftInToCm, lbToKg, type UnitSystem } from "@/lib/units"
 import { useUpdateProfile } from "@/lib/hooks/use-profile"
 import {
   FITNESS_GOAL_OPTIONS,
@@ -25,8 +26,6 @@ import {
   FREQUENCY_OPTIONS,
 } from "@/lib/onboarding-options"
 import type { Profile } from "@/lib/types"
-
-type UnitSystem = "metric" | "imperial"
 
 type OnboardingForm = {
   fitness_goals: string[]
@@ -79,13 +78,12 @@ export default function OnboardingPage() {
   // The DB always stores height in cm and weight in kg.
   function toMetricHeightCm(): number {
     if (form.unit_system === "metric") return Number(form.height_cm)
-    const totalInches = Number(form.height_ft || 0) * 12 + Number(form.height_in || 0)
-    return Math.round(totalInches * 2.54)
+    return ftInToCm(Number(form.height_ft || 0), Number(form.height_in || 0))
   }
 
   function toMetricWeightKg(): number {
     if (form.unit_system === "metric") return Number(form.weight_kg)
-    return Math.round(Number(form.weight_lb) * 0.453592 * 100) / 100
+    return lbToKg(Number(form.weight_lb))
   }
 
   function validateStep(current: number): string | null {
@@ -147,6 +145,7 @@ export default function OnboardingPage() {
         preferred_workout_duration: Number(form.preferred_workout_duration),
         workout_frequency: Number(form.workout_frequency),
         dietary_restrictions: form.dietary_restrictions,
+        unit_system: form.unit_system,
         onboarding_completed: true,
       })
       toast({ title: "You're all set!", description: "Your profile is ready. Let's get started." })
