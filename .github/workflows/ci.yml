@@ -50,10 +50,15 @@ jobs:
       # full signup/onboarding/CRUD e2e against it -- hermetic, no hosted data
       # touched, and email confirmations are off in the local config so signup
       # returns a session immediately.
+      # Version is pinned (not `latest`) because resolving `latest` goes through
+      # the unauthenticated GitHub API, which rate-limits per runner IP and
+      # intermittently fails this job before Supabase ever starts. github-token
+      # authenticates that lookup too, if this moves back to a floating version.
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.109.1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start Supabase (applies migrations)
         run: supabase start
