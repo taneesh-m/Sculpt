@@ -2,6 +2,8 @@ import { generateObject } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { z } from "zod"
 
+import { JUDGE_MODEL } from "@/lib/ai/models"
+
 const judgeResultSchema = z.object({
   score: z.number().min(1).max(5).describe("Overall quality score from 1 (poor) to 5 (excellent)"),
   rationale: z.string().describe("One or two sentences explaining the score"),
@@ -20,7 +22,7 @@ type JudgeInput = {
 // of a hand-wavy "looks good to me."
 export async function judgeResponse({ profileSummary, question, response }: JudgeInput): Promise<JudgeResult> {
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: openai(JUDGE_MODEL),
     schema: judgeResultSchema,
     system: `You are an impartial evaluator grading a fitness/nutrition AI assistant's response. Score strictly on this rubric, from 1 (fails badly) to 5 (excellent):
 

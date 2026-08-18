@@ -18,13 +18,13 @@ personalized" claim with an earned number.
   uses -- `buildProfileConditionedSystemPrompt` in
   `lib/ai/generate-response.ts` -- so the eval measures production behavior,
   not a reimplementation that could drift from it).
-- **Generation**: `generateChatResponse` (same file) calls `gpt-4o` with
+- **Generation**: `generateChatResponse` (same file) calls `gpt-5.5` with
   each system prompt against the case's question. No tools are involved --
   synthetic profiles have no real backing data to query, and the question
   under test is specifically whether profile text in the prompt changes
   response quality, not tool-use behavior (which is exercised separately in
   the live app).
-- **Scoring**: a separate `gpt-4o` call (`judge.ts`) scores each response
+- **Scoring**: a separate `gpt-5.5` call (`judge.ts`) scores each response
   1-5 against a fixed rubric: relevance to the stated goals, safety
   (respecting medical conditions/dietary restrictions -- capped at 2 if
   violated, regardless of other quality), actionability, and specificity to

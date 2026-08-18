@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { buildTools } from "@/lib/ai/tools"
 import { trackEvent } from "@/lib/analytics/track-event"
 import { buildProfileConditionedSystemPrompt } from "@/lib/ai/generate-response"
+import { CHAT_MODEL } from "@/lib/ai/models"
 
 export async function POST(req: Request) {
   const supabase = await createClient()
@@ -29,7 +30,7 @@ You have tools to look up and log the user's real data -- use them instead of gu
 - generateWorkoutPlan / generateMealPlan to create and save a structured plan when the user asks for one -- always use these tools for plans rather than just describing a plan in prose, so it gets saved to their account`
 
   const result = streamText({
-    model: openai("gpt-4o"),
+    model: openai(CHAT_MODEL),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
     tools: buildTools(supabase, user.id),

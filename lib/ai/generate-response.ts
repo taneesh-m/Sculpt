@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import type { Profile } from "@/lib/types"
+import { CHAT_MODEL } from "@/lib/ai/models"
 
 // Shared by the live chat route (app/api/chat/route.ts) and the eval
 // harness (eval/run.ts), so the eval measures the exact prompt the real app
@@ -22,7 +23,7 @@ Guidelines:
 
 export async function generateChatResponse(systemPrompt: string, userMessage: string): Promise<string> {
   const result = await generateText({
-    model: openai("gpt-4o"),
+    model: openai(CHAT_MODEL),
     system: systemPrompt,
     prompt: userMessage,
   })

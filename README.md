@@ -15,7 +15,7 @@ application backed by Supabase (Postgres + Auth) and OpenAI.
   client (`lib/supabase/server.ts`), not a service-role key. The one
   exception is the offline eval script (see below), which needs to write to
   a table with no end-user access at all.
-- **AI SDK v5 + OpenAI (`gpt-4o`)** for the chat coach, with real
+- **AI SDK v5 + OpenAI (`gpt-5.5`)** for the chat coach, with real
   tool-calling: the model can call `getUserProfile`, `getWorkoutHistory`,
   `getDietLogs`, `logWorkout`, `logDietEntry`, `searchNutrition` (real USDA
   FoodData Central lookups), and `generateWorkoutPlan`/`generateMealPlan`
