@@ -254,19 +254,24 @@ test("alice's rows all survived bob's attempts", async () => {
 })
 
 test("eval_runs is unreachable by any signed-in user", async () => {
-  // RLS enabled with zero policies is deny-all for anon and authenticated:
-  // reads come back empty rather than erroring, writes are refused outright.
-  // Only the offline eval script's service-role key can touch this table.
-  const { data, error } = await bob.db.from("eval_runs").select("id")
+  // eval_runs is defended twice over, and the outer layer answers first:
+  // 0006_grants.sql deliberately withholds any grant on it to `authenticated`,
+  // so PostgREST refuses outright with 42501 "permission denied for table"
+  // before RLS is ever consulted. (RLS is enabled with zero policies behind
+  // that, which would deny-all on its own if a grant were ever added.) Only
+  // the offline eval script's service role -- granted in 0008 -- can read or
+  // write this table.
+  const { error } = await bob.db.from("eval_runs").select("id")
 
-  expect(error).toBeNull()
-  expect(data).toEqual([])
+  expect(error, "a table with no authenticated grant must refuse reads").not.toBeNull()
+  expect(error!.code).toBe("42501")
+  expect(error!.message).toContain("permission denied")
 
   const { error: insertError } = await bob.db
     .from("eval_runs")
     .insert([{ variant: "baseline", eval_case_id: "forged", score: 1 }])
 
-  expect(insertError, "a table with no policies must reject writes").not.toBeNull()
+  expect(insertError, "a table with no authenticated grant must refuse writes").not.toBeNull()
   expect(insertError!.code).toBe("42501")
 })
 
