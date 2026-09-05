@@ -78,6 +78,19 @@ export type DietLogRecord = {
   created_at: string
 }
 
+// A single progress_tracking row: a body-composition check-in. `weight` and
+// `muscle_mass` are kilograms, matching profiles.weight_kg; `measurements` is
+// free-form (e.g. { waist: 81, chest: 102 }) in centimeters.
+export type ProgressEntry = {
+  id: string
+  weight?: number
+  body_fat_percentage?: number
+  muscle_mass?: number
+  measurements?: Record<string, number>
+  progress_notes?: string
+  created_at: string
+}
+
 export type AIWorkoutPlan = {
   id: string
   title: string

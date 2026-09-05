@@ -7,16 +7,20 @@ application backed by Supabase (Postgres + Auth) and OpenAI.
 ## Architecture
 
 - **Single Next.js app** (App Router) -- no separate backend service. All
-  business logic lives in Route Handlers under `app/api/**`.
+  business logic lives in 16 REST Route Handlers under `app/api/**`, over a
+  10-table Postgres schema.
 - **Supabase** for auth (email/password + Google OAuth) and Postgres data,
   with Row Level Security enforcing per-user data isolation at the database
-  layer -- every table's RLS policy checks `auth.uid() = user_id`, and every
+  layer -- 31 policies across the schema, every one checking
+  `auth.uid() = user_id` (or reaching through to the owning row, for
+  `exercises`), and every
   Route Handler runs with a request-scoped, cookie-authenticated Supabase
   client (`lib/supabase/server.ts`), not a service-role key. The one
   exception is the offline eval script (see below), which needs to write to
   a table with no end-user access at all.
-- **AI SDK v5 + OpenAI (`gpt-5.5`)** for the chat coach, with real
-  tool-calling: the model can call `getUserProfile`, `getWorkoutHistory`,
+- **AI SDK v5 + OpenAI (`gpt-5.5`)** for the chat coach, streaming, with 8
+  typed (zod-schema'd) tool calls: the model can call `getUserProfile`,
+  `getWorkoutHistory`,
   `getDietLogs`, `logWorkout`, `logDietEntry`, `searchNutrition` (real USDA
   FoodData Central lookups), and `generateWorkoutPlan`/`generateMealPlan`
   (structured output via zod, persisted to the `ai_plans` table) -- see
@@ -27,7 +31,8 @@ application backed by Supabase (Postgres + Auth) and OpenAI.
 
 - Real authentication (email/password + Google OAuth), gated by middleware
   and RLS, not a client-side check.
-- Workout and diet logging backed by Postgres, not localStorage.
+- Workout, diet, and body-measurement logging backed by Postgres, not
+  localStorage.
 - An AI coach that actually knows what you logged and can log things for
   you, instead of guessing from a static system prompt.
 - Real nutrition lookups against USDA FoodData Central, not a hardcoded
@@ -98,6 +103,19 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR: `test`
 stack on the runner (via the Supabase CLI + Docker), applies all
 migrations, and runs the full Playwright suite against it -- hermetic, so
 it never touches a hosted database.
+
+### RLS verification
+
+`e2e/rls.spec.ts` is what makes the isolation claim testable rather than
+asserted. Because every Route Handler already adds `.eq("user_id", ...)`
+to its queries, hitting an endpoint as the wrong user only proves the
+*route filter* works. So that spec signs up two users and drives
+PostgREST directly with each one's own JWT and **no `user_id` filter** --
+the only thing that can deny the read, insert, update, or delete is the
+policy itself. It covers select/insert/update/delete across every
+user-scoped table, the subquery-based `exercises` policies, the deny-all
+`eval_runs` table, and finally the app's own endpoints for defence in
+depth.
 
 ## Personalization eval
 

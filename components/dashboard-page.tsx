@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProgressBadges } from "@/components/progress-badges"
+import { ProgressLog } from "@/components/progress-log"
 import { ChatInterface } from "@/components/chat-interface"
 import { MainNav } from "@/components/main-nav"
 import { MobileNav } from "@/components/mobile-nav"
@@ -58,7 +59,10 @@ export function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="progress" className="p-4">
-            <ProgressBadges />
+            <div className="space-y-8">
+              <ProgressBadges />
+              <ProgressLog />
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" className="p-4">

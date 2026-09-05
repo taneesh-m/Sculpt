@@ -1,4 +1,11 @@
 import { defineConfig } from "@playwright/test"
+import { config } from "dotenv"
+
+// The RLS spec talks to Supabase directly (with each test user's own JWT), so
+// the test process itself needs the project URL/anon key -- not just the dev
+// server Next boots for us. CI puts them in the environment already; locally
+// they come from .env.local.
+config({ path: ".env.local" })
 
 const isCI = !!process.env.CI
 

@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-export type AppEventType = "workout_logged" | "diet_logged" | "chat_message_sent" | "plan_generated"
+export type AppEventType =
+  | "workout_logged"
+  | "diet_logged"
+  | "progress_logged"
+  | "chat_message_sent"
+  | "plan_generated"
 
 // Fire-and-forget: analytics should never fail the request it's attached to.
 export async function trackEvent(
